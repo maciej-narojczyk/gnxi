@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -38,6 +39,13 @@ import (
 	"github.com/google/gnxi/utils/credentials"
 
 	pb "github.com/openconfig/gnmi/proto/gnmi"
+	"github.com/openconfig/ygot/proto/ywrapper"
+	"github.com/openconfig/ygot/ygot"
+
+	"github.com/google/gnxi/gnmi/modeldata/gostruct/proto/openconfig"
+	"github.com/google/gnxi/gnmi/modeldata/gostruct/proto/openconfig/openconfig_interfaces"
+
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 var (
@@ -49,9 +57,110 @@ type server struct {
 	*gnmi.Server
 }
 
-func newServer(model *gnmi.Model, config []byte) (*server, error) {
-	s, err := gnmi.NewServer(model, config, nil)
+func parseProto() {
+
+	log.Info("parseProto")
+
+	var str ywrapper.StringValue
+	str.Value = "qwe"
+	var conf openconfig_interfaces.Interfaces_Interface_Config
+	conf.Name = &str
+
+	var ifc openconfig_interfaces.Interfaces_Interface
+	ifc.Config = &conf
+
+	var ifk openconfig_interfaces.Interfaces_InterfaceKey
+	ifk.Interface = &ifc
+	ifk.Name = "asd"
+
+	var ifc2 openconfig_interfaces.Interfaces
+	ifc2.Interface = make([]*openconfig_interfaces.Interfaces_InterfaceKey,1);
+	ifc2.Interface[0] = &ifk
+	
+	var dev openconfig.Device
+	dev.Interfaces = &ifc2
+
+	// msg := fmt.Sprintf("%s", dev)
+
+	var opt protojson.MarshalOptions
+	opt.EmitUnpopulated = true
+	opt.EmitDefaultValues = true
+	jsonDump, err := opt.Marshal(&dev)
+
+	err = os.WriteFile("config.empty.json", jsonDump, 0644)
 	if err != nil {
+		msg := fmt.Sprintf("parseProto failed to write to file")
+		log.Error(msg)
+	}
+
+	jsonDump, err = os.ReadFile("config.json")
+	if err != nil {
+		msg := fmt.Sprintf("parseProto failed to read file")
+		log.Error(msg)
+	}
+
+	err = protojson.Unmarshal(jsonDump, &dev)
+	if err != nil {
+		msg := fmt.Sprintf("parseProto: error in Unmarshaling: %v", err)
+		log.Error(msg)
+	}
+
+	// log.Info(msg)
+}
+
+func myCallback(config ygot.ValidatedGoStruct) error {
+	log.Info("myCallback")
+
+	jsonType := "Internal"
+	_ = jsonType
+
+	// jsonTree, err := ygot.ConstructInternalJSON(config)
+	// jsonTree, err := ygot.ConstructIETFJSON(config, &ygot.RFC7951JSONConfig{AppendModuleName: false})
+	// if err != nil {
+	// 	msg := fmt.Sprintf("myCallback: error in constructing IETF JSON tree from config struct: %v", err)
+	// 	log.Error(msg)
+	// 	return status.Error(codes.Internal, msg)
+	// }
+
+	// jsonDump, err := json.Marshal(jsonTree)
+	// if err != nil {
+	// 	msg := fmt.Sprintf("myCallback: error in marshaling %s JSON tree to bytes: %v", jsonType, err)
+	// 	log.Error(msg)
+	// 	return status.Error(codes.Internal, msg)
+	// }
+
+	jsonDump, err := ygot.EmitJSON(config, &ygot.EmitJSONConfig{
+		Format: ygot.RFC7951,
+		Indent: "  ",
+		RFC7951Config: &ygot.RFC7951JSONConfig{
+			AppendModuleName: false,
+		 },
+	})
+	if err != nil {
+		msg := fmt.Sprintf("myCallback: error in EmitJSON: %v", err)
+		log.Error(msg)
+		return status.Error(codes.Internal, msg)
+	}	
+
+	_ = jsonDump
+	file, err := os.OpenFile("config.json", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	file.WriteString(jsonDump)
+	// err = os.WriteString("config.json", jsonDump, 0644)
+	if err != nil {
+		msg := fmt.Sprintf("myCallback failed to write to file")
+		log.Error(msg)
+		return status.Error(codes.Internal, msg)
+	}
+
+	parseProto()
+	errors.New("an error msg")
+	return nil
+}
+
+func newServer(model *gnmi.Model, config []byte) (*server, error) {
+	s, err := gnmi.NewServer(model, config, myCallback)
+	if err != nil {
+		fmt.Print("dupa1\n")
 		return nil, err
 	}
 	return &server{Server: s}, nil
