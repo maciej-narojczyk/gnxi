@@ -17,9 +17,9 @@ go get -u google.golang.org/grpc
 
 echo dupa2
 
-# rm -rf public yang
-# git clone https://github.com/openconfig/public.git
-# git clone https://github.com/YangModels/yang.git
+rm -rf public yang
+git clone https://github.com/openconfig/public.git
+git clone https://github.com/YangModels/yang.git
 
 go install github.com/openconfig/ygot/generator@latest
 
@@ -52,18 +52,3 @@ cp $GOPATH/pkg/mod/github.com/openconfig/ygot@v0.29.18/proto/yext/yext.proto pro
 
 
 echo dupa4
-
-# proto_imports="$GOPATH/src"
-# proto_imports="qwe"
-find proto -name "*.proto" | while read l; do
-  cmd="protoc -I=./  --go_out=. --go_opt=paths=source_relative $l"
-#   cmd="protoc -I=$proto_imports:./  --cpp_out=. $l"
-  echo "dupa4.1"
-  echo 
-  echo $cmd
-  $cmd
-done
-
-echo dupa5
-
-
