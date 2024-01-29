@@ -23,32 +23,5 @@ git clone https://github.com/YangModels/yang.git
 
 go install github.com/openconfig/ygot/generator@latest
 
-
-rm -rf proto
 generator -generate_fakeroot -output_file generated.go -package_name gostruct -exclude_modules ietf-interfaces -path public,yang -generate_simple_unions -compress_paths=false public/release/models/interfaces/openconfig-interfaces.yang public/release/models/openflow/openconfig-openflow.yang public/release/models/platform/openconfig-platform.yang public/release/models/system/openconfig-system.yang
 
-echo dupa3
-
-go run $GOPATH/pkg/mod/github.com/openconfig/ygot@v0.29.18/proto_generator/protogenerator.go \
-    -generate_fakeroot \
-    -base_import_path="proto" \
-    -go_package_base="github.com/google/gnxi/gnmi/modeldata/gostruct/proto" \
-    -ywrapper_path="proto/ywrapper" \
-    -yext_path="proto/yext" \
-    -path=public,yang \
-    -output_dir=proto \
-    -enum_package_name=enums -package_name=openconfig \
-    -exclude_modules=ietf-interfaces \
-    -compress_paths=false \
-    public/release/models/interfaces/openconfig-interfaces.yang \
-    public/release/models/openflow/openconfig-openflow.yang \
-    public/release/models/platform/openconfig-platform.yang \
-    public/release/models/system/openconfig-system.yang \
-
-mkdir -p proto/ywrapper
-cp $GOPATH/pkg/mod/github.com/openconfig/ygot@v0.29.18/proto/ywrapper/ywrapper.proto proto/ywrapper/ywrapper.proto
-mkdir -p proto/yext
-cp $GOPATH/pkg/mod/github.com/openconfig/ygot@v0.29.18/proto/yext/yext.proto proto/yext/yext.proto
-
-
-echo dupa4
